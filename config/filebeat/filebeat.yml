@@ -1,6 +1,6 @@
 filebeat.inputs:
   - type: log
     paths:
-      - "/path/to/logs/dir"
+      #- "/path/to/logs/dir"
 output.logstash:
   hosts: ["logstash"]

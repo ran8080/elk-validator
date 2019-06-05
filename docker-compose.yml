@@ -99,7 +99,7 @@ services:
       - ./res:/res
       - ./app_logs:/app_logs
       - ./src/modules:/proj
-      - ./src/config:/config_dir
+      - ./config/validator:/config_dir
     command: python /proj/main.py -c /config_dir/validator.yaml
 
 networks:
