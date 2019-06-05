@@ -1,0 +1,28 @@
+### Here write configuration for elk-validator ###
+---
+# Services
+logger:
+  logger_path: "/app_logs/es_logger.log"
+
+insanity_checker:
+  es_host: ""
+  es_port: 9200
+  output_dir: "/output"
+  logs_dir: "/logs"
+  output_format: "FILE"
+
+reloader:
+  ls_host: ""
+  ls_port: 5040
+  input_format: "FILE"
+  input_dir: "/output"
+
+duplicate_handler:
+  es_host: ""
+  es_port: 9200
+  test_output_dir: "/res"
+  generate_test_output: false
+  hash_keys: ["message", "log_orig_timestamp", "debug_leve", "entity"]
+  reserved_index_names: [".kibana", ".metricbeat"]
+
+...

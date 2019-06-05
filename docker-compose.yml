@@ -1,0 +1,113 @@
+version: "3"
+services:
+  elasticsearch:
+    image: elasticsearch:6.5.3
+    ports:
+      - "9200:9200"
+    environment:
+      - cluster.name=docker-cluster
+    volumes:
+      esdata:/usr/share/elasticsearch/data
+    networks:
+      - elknet
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints: [node.role == manager]
+
+  kibana:
+    image: kibana:6.5.3
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - elknet
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints: [node.role == manager]
+
+  logstash:
+    image: logstash:6.5.3
+    ports:
+      - "5044:5044"
+    volumes:
+      - ./config/logstash:/config-dir
+    command: logstash -f /config-dir/logstash.conf
+    depends_on:
+      - elasticsearch
+    networks:
+      - elknet
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  filebeat:
+    image: beats/filebeat:6.5.3
+    depends_on:
+      - logstash
+      - elasticsearch
+      - kibana
+    volumes:
+      - ./config/filebeat:fbconfig-dir
+      - ./logs_input_dir:/logs_input_dir  # Where filebeat reads log files from
+      - fbdata:/usr/share/filebeat/data
+    command: filebeat -e -c /fbconfig-dir/filebeat.yml -d "publish"
+    networks:
+      - elknet
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  metricbeat:
+    image: beats/metricbeat:6.5.3
+    user: root
+    depends_on:
+      - elasticsearch
+      - kibana
+      - logstash
+    environment:
+      - "ELASTICSEARCH_HOST=elasticsearch:9200"
+      - "KIBANA_HOST=kibana:5601"
+    networks:
+      - elknet
+    volumes:
+      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+      - /proc:/hostfs/proc:ro
+      - /:hostfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/metricbeat/:/mbconfig-dir
+      - mbdata:/usr/share/metricbeat/data
+    command: metricbeat -e -c /mbconfig-dir/metricbeat.yml -system.hostfs=/hostfs
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      restart_policy:
+        condition: on-failure
+
+  es_insanity_check:
+    image: elk_validator:0.1.0
+    networks:
+      - elknet
+    volumes:
+      # Here config your logs dir (logs to compare data to)
+      - ./logs:/logs
+      - ./output:/output
+      - ./res:/res
+      - ./app_logs:/app_logs
+      - ./src/modules:/proj
+      - ./src/config:/config_dir
+    command: python /proj/main.py -c /config_dir/validator.yaml
+
+networks:
+  elknet:
+
+volumes:
+  esdata:
+  fbdata:
+  mbdata:
+
+
