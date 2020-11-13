@@ -1,2 +1,2 @@
 # elk-validator
-Elasticstack integrity and reliability toolkit
+Elasticsearch integrity and reliability toolkit
